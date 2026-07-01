@@ -15,3 +15,9 @@ export function getSupportedMimeTypes(): MimeTypeOption[] {
 
   return [{ label: "Formato por defecto", value: "" }];
 }
+
+export function getPreferredMimeType(): string {
+  const supported = getSupportedMimeTypes();
+  const vp9 = supported.find((t) => t.value.includes("vp9"));
+  return vp9?.value ?? supported[0]?.value ?? "";
+}

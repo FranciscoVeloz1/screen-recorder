@@ -1,24 +1,25 @@
-import type { MimeTypeOption } from "../types/recording";
+import type { QualityPresetId } from "../types/recording";
+import { QUALITY_PRESETS } from "../utils/qualityPresets";
 import styles from "./RecordingOptions.module.css";
 
 interface RecordingOptionsProps {
-  quality: number;
+  qualityPresetId: QualityPresetId;
   mimeType: string;
   includeAudio: boolean;
-  supportedMimeTypes: MimeTypeOption[];
+  supportedMimeTypes: { label: string; value: string }[];
   disabled: boolean;
-  onQualityChange: (bps: number) => void;
+  onQualityPresetChange: (id: QualityPresetId) => void;
   onMimeTypeChange: (type: string) => void;
   onIncludeAudioChange: (enabled: boolean) => void;
 }
 
 export function RecordingOptions({
-  quality,
+  qualityPresetId,
   mimeType,
   includeAudio,
   supportedMimeTypes,
   disabled,
-  onQualityChange,
+  onQualityPresetChange,
   onMimeTypeChange,
   onIncludeAudioChange,
 }: RecordingOptionsProps) {
@@ -28,13 +29,17 @@ export function RecordingOptions({
         <label htmlFor="quality">Calidad de video</label>
         <select
           id="quality"
-          value={quality}
+          value={qualityPresetId}
           disabled={disabled}
-          onChange={(e) => onQualityChange(Number(e.target.value))}
+          onChange={(e) =>
+            onQualityPresetChange(e.target.value as QualityPresetId)
+          }
         >
-          <option value={2_500_000}>Media (2.5 Mbps)</option>
-          <option value={5_000_000}>Alta (5 Mbps)</option>
-          <option value={8_000_000}>Muy alta (8 Mbps)</option>
+          {QUALITY_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label} ({preset.summary})
+            </option>
+          ))}
         </select>
       </div>
 

@@ -1,3 +1,4 @@
+import { CaptureInfo } from "./components/CaptureInfo";
 import { Header } from "./components/Header";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { RecorderCard } from "./components/RecorderCard";
@@ -17,12 +18,12 @@ const App = () => {
       <Header />
       <RecorderCard>
         <RecordingOptions
-          quality={recorder.quality}
+          qualityPresetId={recorder.qualityPresetId}
           mimeType={recorder.mimeType}
           includeAudio={recorder.includeAudio}
           supportedMimeTypes={recorder.supportedMimeTypes}
           disabled={optionsDisabled}
-          onQualityChange={recorder.setQuality}
+          onQualityPresetChange={recorder.setQualityPresetId}
           onMimeTypeChange={recorder.setMimeType}
           onIncludeAudioChange={recorder.setIncludeAudio}
         />
@@ -32,6 +33,8 @@ const App = () => {
           isRecording={recorder.isRecording}
           timerFormatted={recorder.timerFormatted}
         />
+
+        <CaptureInfo info={recorder.isRecording ? recorder.captureInfo : null} />
 
         <RecordingControls
           canStart={recorder.canStart}

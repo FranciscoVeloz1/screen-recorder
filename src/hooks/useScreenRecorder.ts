@@ -1,12 +1,22 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type {
+  CaptureInfo,
+  QualityPresetId,
   Recording,
   RecordingStatus,
   StatusVariant,
 } from "../types/recording";
 import { buildRecordingFilename } from "../utils/buildRecordingFilename";
 import { downloadFile } from "../utils/downloadFile";
-import { getSupportedMimeTypes } from "../utils/getSupportedMimeTypes";
+import { readCaptureInfo } from "../utils/formatCaptureInfo";
+import {
+  getPreferredMimeType,
+  getSupportedMimeTypes,
+} from "../utils/getSupportedMimeTypes";
+import {
+  DEFAULT_QUALITY_PRESET_ID,
+  getQualityPreset,
+} from "../utils/qualityPresets";
 import { useRecordingTimer } from "./useRecordingTimer";
 
 function createRecordingId(): string {
@@ -29,9 +39,12 @@ export function useScreenRecorder() {
   const [statusMessage, setStatusMessage] = useState("Listo para grabar");
   const [statusVariant, setStatusVariant] = useState<StatusVariant>("");
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo | null>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
-  const [quality, setQuality] = useState(5_000_000);
-  const [mimeType, setMimeType] = useState(supportedMimeTypes[0]?.value ?? "");
+  const [qualityPresetId, setQualityPresetId] = useState<QualityPresetId>(
+    DEFAULT_QUALITY_PRESET_ID,
+  );
+  const [mimeType, setMimeType] = useState(() => getPreferredMimeType());
   const [includeAudio, setIncludeAudio] = useState(true);
   const [latestRecordingId, setLatestRecordingId] = useState<string | null>(
     null,
@@ -57,6 +70,7 @@ export function useScreenRecorder() {
     combinedStreamRef.current = null;
     displayStreamRef.current = null;
     setPreviewStream(null);
+    setCaptureInfo(null);
   }, []);
 
   const stopRecording = useCallback(() => {
@@ -70,12 +84,14 @@ export function useScreenRecorder() {
   }, [cleanupStreams, timer]);
 
   const startRecording = useCallback(async () => {
+    const preset = getQualityPreset(qualityPresetId);
+
     try {
       setStatus("selecting");
       setStatusWithMessage("Selecciona la pantalla a grabar...");
 
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: 30 } },
+        video: preset.videoConstraints,
         audio: includeAudio,
       });
       displayStreamRef.current = displayStream;
@@ -84,7 +100,11 @@ export function useScreenRecorder() {
       if (includeAudio) {
         try {
           audioStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            },
             video: false,
           });
         } catch (micError) {
@@ -108,7 +128,22 @@ export function useScreenRecorder() {
 
       setPreviewStream(displayStream);
 
-      const options: MediaRecorderOptions = { bitsPerSecond: quality };
+      const videoTrack = displayStream.getVideoTracks()[0];
+      if (videoTrack) {
+        setCaptureInfo(
+          readCaptureInfo(
+            videoTrack,
+            mimeType,
+            supportedMimeTypes,
+            preset.videoBitsPerSecond,
+          ),
+        );
+      }
+
+      const options: MediaRecorderOptions = {
+        videoBitsPerSecond: preset.videoBitsPerSecond,
+        audioBitsPerSecond: preset.audioBitsPerSecond,
+      };
       if (mimeType) options.mimeType = mimeType;
 
       const recorder = new MediaRecorder(combinedStream, options);
@@ -144,7 +179,6 @@ export function useScreenRecorder() {
         );
       };
 
-      const videoTrack = displayStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.onended = () => {
           if (recorder.state !== "inactive") stopRecording();
@@ -165,9 +199,10 @@ export function useScreenRecorder() {
     cleanupStreams,
     includeAudio,
     mimeType,
-    quality,
+    qualityPresetId,
     setStatusWithMessage,
     stopRecording,
+    supportedMimeTypes,
     timer,
   ]);
 
@@ -211,13 +246,14 @@ export function useScreenRecorder() {
     canStop,
     canDownloadLatest,
     previewStream,
+    captureInfo,
     recordings,
-    quality,
+    qualityPresetId,
     mimeType,
     includeAudio,
     supportedMimeTypes,
     timerFormatted: timer.formatted,
-    setQuality,
+    setQualityPresetId,
     setMimeType,
     setIncludeAudio,
     startRecording,
