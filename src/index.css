@@ -1,0 +1,50 @@
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --color-bg: #0f0f13;
+  --color-surface: #1a1a23;
+  --color-surface-deep: #12121a;
+  --color-preview: #0a0a10;
+  --color-border: #2a2a38;
+  --color-text: #e0e0e0;
+  --color-text-muted: #888;
+  --color-text-dim: #666;
+  --color-text-subtle: #ccc;
+  --color-accent: #5b6af5;
+  --color-danger: #e04444;
+  --color-success: #27ae60;
+  --color-success-text: #4cd07d;
+  --color-error-text: #e07070;
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-input: 8px;
+}
+
+html {
+  font-family: "Segoe UI", sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: var(--color-bg);
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
