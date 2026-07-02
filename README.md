@@ -44,7 +44,8 @@ URL en vivo: [https://franciscoveloz1.github.io/screen-recorder/](https://franci
 
 - Captura de pantalla con `getDisplayMedia`
 - Audio del sistema y micrófono opcionales
-- Selector de calidad (1080p30, 1080p60, 1440p60, máxima) con bitrate de video y audio separados
+- Selector de FPS (30, 60, máximo del navegador) y resolución (nativa, 1080p, 1440p)
+- Bitrate de video escalado según FPS para mantener fluidez
 - Formatos detectados en runtime (WebM VP9/VP8, MP4)
 - Vista previa en vivo y temporizador
 - Lista de grabaciones de la sesión con descarga y eliminación

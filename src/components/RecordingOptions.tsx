@@ -1,43 +1,63 @@
-import type { QualityPresetId } from "../types/recording";
-import { QUALITY_PRESETS } from "../utils/qualityPresets";
+import type { FpsPresetId, ResolutionId } from "../types/recording";
+import { FPS_PRESETS, RESOLUTION_OPTIONS } from "../utils/recordingSettings";
 import styles from "./RecordingOptions.module.css";
 
 interface RecordingOptionsProps {
-  qualityPresetId: QualityPresetId;
+  fpsPresetId: FpsPresetId;
+  resolutionId: ResolutionId;
   mimeType: string;
   includeAudio: boolean;
   supportedMimeTypes: { label: string; value: string }[];
   disabled: boolean;
-  onQualityPresetChange: (id: QualityPresetId) => void;
+  onFpsPresetChange: (id: FpsPresetId) => void;
+  onResolutionChange: (id: ResolutionId) => void;
   onMimeTypeChange: (type: string) => void;
   onIncludeAudioChange: (enabled: boolean) => void;
 }
 
 export function RecordingOptions({
-  qualityPresetId,
+  fpsPresetId,
+  resolutionId,
   mimeType,
   includeAudio,
   supportedMimeTypes,
   disabled,
-  onQualityPresetChange,
+  onFpsPresetChange,
+  onResolutionChange,
   onMimeTypeChange,
   onIncludeAudioChange,
 }: RecordingOptionsProps) {
   return (
     <div className={styles.options}>
       <div className={styles.optionGroup}>
-        <label htmlFor="quality">Calidad de video</label>
+        <label htmlFor="fps">Cuadros por segundo</label>
         <select
-          id="quality"
-          value={qualityPresetId}
+          id="fps"
+          value={fpsPresetId}
           disabled={disabled}
-          onChange={(e) =>
-            onQualityPresetChange(e.target.value as QualityPresetId)
-          }
+          onChange={(e) => onFpsPresetChange(e.target.value as FpsPresetId)}
         >
-          {QUALITY_PRESETS.map((preset) => (
+          {FPS_PRESETS.map((preset) => (
             <option key={preset.id} value={preset.id}>
               {preset.label} ({preset.summary})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={styles.optionGroup}>
+        <label htmlFor="resolution">Resolución</label>
+        <select
+          id="resolution"
+          value={resolutionId}
+          disabled={disabled}
+          onChange={(e) => onResolutionChange(e.target.value as ResolutionId)}
+        >
+          {RESOLUTION_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.summary
+                ? `${option.label} (${option.summary})`
+                : option.label}
             </option>
           ))}
         </select>

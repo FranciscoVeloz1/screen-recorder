@@ -18,12 +18,14 @@ const App = () => {
       <Header />
       <RecorderCard>
         <RecordingOptions
-          qualityPresetId={recorder.qualityPresetId}
+          fpsPresetId={recorder.fpsPresetId}
+          resolutionId={recorder.resolutionId}
           mimeType={recorder.mimeType}
           includeAudio={recorder.includeAudio}
           supportedMimeTypes={recorder.supportedMimeTypes}
           disabled={optionsDisabled}
-          onQualityPresetChange={recorder.setQualityPresetId}
+          onFpsPresetChange={recorder.setFpsPresetId}
+          onResolutionChange={recorder.setResolutionId}
           onMimeTypeChange={recorder.setMimeType}
           onIncludeAudioChange={recorder.setIncludeAudio}
         />

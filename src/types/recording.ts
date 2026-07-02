@@ -7,18 +7,28 @@ export type RecordingStatus =
 
 export type StatusVariant = "" | "ok" | "error";
 
-export type QualityPresetId = "1080p30" | "1080p60" | "1440p60" | "max";
+export type FpsPresetId = "30" | "60" | "max";
+
+export type ResolutionId = "native" | "1080p" | "1440p";
 
 export interface MimeTypeOption {
   label: string;
   value: string;
 }
 
-export interface QualityPreset {
-  id: QualityPresetId;
+export interface FpsPreset {
+  id: FpsPresetId;
   label: string;
   summary: string;
-  videoConstraints: MediaTrackConstraints;
+}
+
+export interface ResolutionOption {
+  id: ResolutionId;
+  label: string;
+  summary?: string;
+}
+
+export interface EncodingSettings {
   videoBitsPerSecond: number;
   audioBitsPerSecond: number;
 }

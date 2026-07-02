@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   CaptureInfo,
-  QualityPresetId,
+  FpsPresetId,
   Recording,
   RecordingStatus,
+  ResolutionId,
   StatusVariant,
 } from "../types/recording";
 import { buildRecordingFilename } from "../utils/buildRecordingFilename";
@@ -14,9 +15,12 @@ import {
   getSupportedMimeTypes,
 } from "../utils/getSupportedMimeTypes";
 import {
-  DEFAULT_QUALITY_PRESET_ID,
-  getQualityPreset,
-} from "../utils/qualityPresets";
+  applyFpsBoost,
+  buildVideoConstraints,
+  calculateEncodingSettings,
+  DEFAULT_FPS_PRESET_ID,
+  DEFAULT_RESOLUTION_ID,
+} from "../utils/recordingSettings";
 import { useRecordingTimer } from "./useRecordingTimer";
 
 function createRecordingId(): string {
@@ -41,8 +45,10 @@ export function useScreenRecorder() {
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [captureInfo, setCaptureInfo] = useState<CaptureInfo | null>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
-  const [qualityPresetId, setQualityPresetId] = useState<QualityPresetId>(
-    DEFAULT_QUALITY_PRESET_ID,
+  const [fpsPresetId, setFpsPresetId] =
+    useState<FpsPresetId>(DEFAULT_FPS_PRESET_ID);
+  const [resolutionId, setResolutionId] = useState<ResolutionId>(
+    DEFAULT_RESOLUTION_ID,
   );
   const [mimeType, setMimeType] = useState(() => getPreferredMimeType());
   const [includeAudio, setIncludeAudio] = useState(true);
@@ -84,14 +90,14 @@ export function useScreenRecorder() {
   }, [cleanupStreams, timer]);
 
   const startRecording = useCallback(async () => {
-    const preset = getQualityPreset(qualityPresetId);
+    const encoding = calculateEncodingSettings(fpsPresetId, resolutionId);
 
     try {
       setStatus("selecting");
       setStatusWithMessage("Selecciona la pantalla a grabar...");
 
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: preset.videoConstraints,
+        video: buildVideoConstraints(fpsPresetId, resolutionId),
         audio: includeAudio,
       });
       displayStreamRef.current = displayStream;
@@ -130,19 +136,20 @@ export function useScreenRecorder() {
 
       const videoTrack = displayStream.getVideoTracks()[0];
       if (videoTrack) {
+        await applyFpsBoost(videoTrack, fpsPresetId);
         setCaptureInfo(
           readCaptureInfo(
             videoTrack,
             mimeType,
             supportedMimeTypes,
-            preset.videoBitsPerSecond,
+            encoding.videoBitsPerSecond,
           ),
         );
       }
 
       const options: MediaRecorderOptions = {
-        videoBitsPerSecond: preset.videoBitsPerSecond,
-        audioBitsPerSecond: preset.audioBitsPerSecond,
+        videoBitsPerSecond: encoding.videoBitsPerSecond,
+        audioBitsPerSecond: encoding.audioBitsPerSecond,
       };
       if (mimeType) options.mimeType = mimeType;
 
@@ -197,9 +204,10 @@ export function useScreenRecorder() {
     }
   }, [
     cleanupStreams,
+    fpsPresetId,
     includeAudio,
     mimeType,
-    qualityPresetId,
+    resolutionId,
     setStatusWithMessage,
     stopRecording,
     supportedMimeTypes,
@@ -248,12 +256,14 @@ export function useScreenRecorder() {
     previewStream,
     captureInfo,
     recordings,
-    qualityPresetId,
+    fpsPresetId,
+    resolutionId,
     mimeType,
     includeAudio,
     supportedMimeTypes,
     timerFormatted: timer.formatted,
-    setQualityPresetId,
+    setFpsPresetId,
+    setResolutionId,
     setMimeType,
     setIncludeAudio,
     startRecording,
