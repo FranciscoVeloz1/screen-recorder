@@ -11,5 +11,13 @@ export function StatusMessage({ message, variant }: StatusMessageProps) {
     .filter(Boolean)
     .join(" ");
 
-  return <p className={className}>{message}</p>;
+  return (
+    <p
+      className={className}
+      role="status"
+      aria-live={variant === "error" ? "assertive" : "polite"}
+    >
+      {message}
+    </p>
+  );
 }

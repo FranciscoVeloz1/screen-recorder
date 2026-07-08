@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Recording } from "../types/recording";
 import { formatBytes } from "../utils/formatBytes";
 import { formatTime } from "../utils/formatTime";
@@ -14,6 +15,21 @@ export function RecordingItem({
   onDownload,
   onDelete,
 }: RecordingItemProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const handleDeleteClick = () => {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    onDelete(recording.id);
+    setConfirmingDelete(false);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmingDelete(false);
+  };
+
   return (
     <div className={styles.item}>
       <div className={styles.info}>
@@ -26,17 +42,38 @@ export function RecordingItem({
         <button
           type="button"
           className={styles.download}
-          onClick={() => onDownload(recording.id)}
+          onClick={() => {
+            onDownload(recording.id);
+          }}
         >
           Descargar
         </button>
-        <button
-          type="button"
-          className={styles.delete}
-          onClick={() => onDelete(recording.id)}
-        >
-          Eliminar
-        </button>
+        {confirmingDelete ? (
+          <>
+            <button
+              type="button"
+              className={styles.confirmDelete}
+              onClick={handleDeleteClick}
+            >
+              Confirmar
+            </button>
+            <button
+              type="button"
+              className={styles.cancelDelete}
+              onClick={handleCancelDelete}
+            >
+              Cancelar
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={styles.delete}
+            onClick={handleDeleteClick}
+          >
+            Eliminar
+          </button>
+        )}
       </div>
     </div>
   );

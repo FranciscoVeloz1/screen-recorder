@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   CaptureInfo,
   FpsPresetId,
@@ -29,12 +35,27 @@ function createRecordingId(): string {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof DOMException && error.name === "NotAllowedError") {
-    return "Permiso denegado o seleccion cancelada.";
+    return "Permiso denegado o selección cancelada.";
   }
   if (error instanceof Error) {
     return `Error: ${error.message}`;
   }
   return "Error desconocido.";
+}
+
+function createMediaRecorder(
+  stream: MediaStream,
+  options: MediaRecorderOptions,
+): MediaRecorder {
+  try {
+    return new MediaRecorder(stream, options);
+  } catch {
+    const fallbackOptions: MediaRecorderOptions = {
+      videoBitsPerSecond: options.videoBitsPerSecond,
+      audioBitsPerSecond: options.audioBitsPerSecond,
+    };
+    return new MediaRecorder(stream, fallbackOptions);
+  }
 }
 
 export function useScreenRecorder() {
@@ -51,7 +72,8 @@ export function useScreenRecorder() {
     DEFAULT_RESOLUTION_ID,
   );
   const [mimeType, setMimeType] = useState(() => getPreferredMimeType());
-  const [includeAudio, setIncludeAudio] = useState(true);
+  const [includeSystemAudio, setIncludeSystemAudio] = useState(true);
+  const [includeMicrophone, setIncludeMicrophone] = useState(false);
   const [latestRecordingId, setLatestRecordingId] = useState<string | null>(
     null,
   );
@@ -62,6 +84,14 @@ export function useScreenRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const combinedStreamRef = useRef<MediaStream | null>(null);
   const displayStreamRef = useRef<MediaStream | null>(null);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
+  const isStoppingRef = useRef(false);
+  const recorderErrorRef = useRef(false);
+  const recordingsRef = useRef<Recording[]>([]);
+
+  useEffect(() => {
+    recordingsRef.current = recordings;
+  }, [recordings]);
 
   const setStatusWithMessage = useCallback(
     (message: string, variant: StatusVariant = "") => {
@@ -72,22 +102,141 @@ export function useScreenRecorder() {
   );
 
   const cleanupStreams = useCallback(() => {
-    combinedStreamRef.current?.getTracks().forEach((track) => track.stop());
+    combinedStreamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
     combinedStreamRef.current = null;
     displayStreamRef.current = null;
     setPreviewStream(null);
     setCaptureInfo(null);
   }, []);
 
-  const stopRecording = useCallback(() => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
+  const clearVideoTrackHandler = useCallback(() => {
+    if (videoTrackRef.current) {
+      videoTrackRef.current.onended = null;
+      videoTrackRef.current = null;
     }
+  }, []);
+
+  const finalizeAfterStop = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) {
+      isStoppingRef.current = false;
+      return;
+    }
+
+    const blob = new Blob(chunksRef.current, {
+      type: recorder.mimeType || "video/webm",
+    });
+
+    const hadError = recorderErrorRef.current;
+
+    if (blob.size > 0 && !hadError) {
+      const url = URL.createObjectURL(blob);
+      const name = buildRecordingFilename(recorder.mimeType || "video/webm");
+      const id = createRecordingId();
+
+      const recording: Recording = {
+        id,
+        url,
+        name,
+        duration: timer.getSeconds(),
+        size: blob.size,
+      };
+
+      setRecordings((prev) => {
+        return [...prev, recording];
+      });
+      setLatestRecordingId(id);
+    }
+
     cleanupStreams();
     timer.stop();
-    setStatus("stopped");
-  }, [cleanupStreams, timer]);
+    clearVideoTrackHandler();
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+    isStoppingRef.current = false;
+    recorderErrorRef.current = false;
+
+    if (hadError) {
+      setStatus("error");
+      setStatusWithMessage("Error durante la grabación.", "error");
+    } else {
+      setStatus("stopped");
+      if (blob.size > 0) {
+        setStatusWithMessage(
+          "Grabación finalizada. Listo para descargar.",
+          "ok",
+        );
+      } else {
+        setStatusWithMessage("La grabación quedó vacía.", "error");
+      }
+    }
+  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
+
+  const stopRecording = useCallback(() => {
+    if (isStoppingRef.current) {
+      return;
+    }
+
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      return;
+    }
+
+    isStoppingRef.current = true;
+    setStatusWithMessage("Finalizando grabación...");
+
+    try {
+      if (recorder.state === "recording") {
+        recorder.requestData();
+      }
+      recorder.stop();
+    } catch {
+      isStoppingRef.current = false;
+      cleanupStreams();
+      timer.stop();
+      clearVideoTrackHandler();
+      mediaRecorderRef.current = null;
+      setStatus("error");
+      setStatusWithMessage("Error al detener la grabación.", "error");
+    }
+  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
+
+  const handleRecorderError = useCallback(() => {
+    if (isStoppingRef.current) {
+      return;
+    }
+
+    recorderErrorRef.current = true;
+    setStatusWithMessage("Error durante la grabación.", "error");
+
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      isStoppingRef.current = true;
+      try {
+        if (recorder.state === "recording") {
+          recorder.requestData();
+        }
+        recorder.stop();
+      } catch {
+        isStoppingRef.current = false;
+        cleanupStreams();
+        timer.stop();
+        clearVideoTrackHandler();
+        mediaRecorderRef.current = null;
+        setStatus("error");
+        setStatusWithMessage("Error durante la grabación.", "error");
+      }
+    } else {
+      cleanupStreams();
+      timer.stop();
+      clearVideoTrackHandler();
+      mediaRecorderRef.current = null;
+      setStatus("error");
+      setStatusWithMessage("Error durante la grabación.", "error");
+    }
+  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
 
   const startRecording = useCallback(async () => {
     const encoding = calculateEncodingSettings(fpsPresetId, resolutionId);
@@ -95,15 +244,19 @@ export function useScreenRecorder() {
     try {
       setStatus("selecting");
       setStatusWithMessage("Selecciona la pantalla a grabar...");
+      recorderErrorRef.current = false;
+      isStoppingRef.current = false;
 
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: buildVideoConstraints(fpsPresetId, resolutionId),
-        audio: includeAudio,
+        audio: includeSystemAudio,
       });
       displayStreamRef.current = displayStream;
 
       let audioStream: MediaStream | null = null;
-      if (includeAudio) {
+      let micWarning: string | null = null;
+
+      if (includeMicrophone) {
         try {
           audioStream = await navigator.mediaDevices.getUserMedia({
             audio: {
@@ -118,9 +271,10 @@ export function useScreenRecorder() {
             micError instanceof DOMException &&
             micError.name === "NotAllowedError"
           ) {
-            // Mic denied — continue without it
+            micWarning =
+              "Micrófono no disponible; grabando sin micrófono.";
           } else if (micError instanceof Error) {
-            console.warn("Microphone unavailable:", micError.message);
+            micWarning = `Micrófono no disponible: ${micError.message}`;
           }
         }
       }
@@ -137,75 +291,83 @@ export function useScreenRecorder() {
       const videoTrack = displayStream.getVideoTracks()[0];
       if (videoTrack) {
         await applyFpsBoost(videoTrack, fpsPresetId);
-        setCaptureInfo(
-          readCaptureInfo(
-            videoTrack,
-            mimeType,
-            supportedMimeTypes,
-            encoding.videoBitsPerSecond,
-          ),
-        );
+        videoTrackRef.current = videoTrack;
       }
 
       const options: MediaRecorderOptions = {
         videoBitsPerSecond: encoding.videoBitsPerSecond,
         audioBitsPerSecond: encoding.audioBitsPerSecond,
       };
-      if (mimeType) options.mimeType = mimeType;
+      if (mimeType) {
+        options.mimeType = mimeType;
+      }
 
-      const recorder = new MediaRecorder(combinedStream, options);
+      const recorder = createMediaRecorder(combinedStream, options);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
+      if (videoTrack) {
+        setCaptureInfo(
+          readCaptureInfo(
+            videoTrack,
+            recorder.mimeType || mimeType,
+            supportedMimeTypes,
+            encoding.videoBitsPerSecond,
+          ),
+        );
+      }
+
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        handleRecorderError();
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || "video/webm",
-        });
-        const url = URL.createObjectURL(blob);
-        const name = buildRecordingFilename(recorder.mimeType || "video/webm");
-        const id = createRecordingId();
-
-        const recording: Recording = {
-          id,
-          url,
-          name,
-          duration: timer.getSeconds(),
-          size: blob.size,
-        };
-
-        setRecordings((prev) => [...prev, recording]);
-        setLatestRecordingId(id);
-        setStatus("stopped");
-        setStatusWithMessage(
-          "Grabacion finalizada. Listo para descargar.",
-          "ok",
-        );
+        finalizeAfterStop();
       };
 
       if (videoTrack) {
         videoTrack.onended = () => {
-          if (recorder.state !== "inactive") stopRecording();
+          if (
+            mediaRecorderRef.current &&
+            mediaRecorderRef.current.state !== "inactive"
+          ) {
+            stopRecording();
+          }
         };
       }
 
       recorder.start(1000);
       timer.start();
       setStatus("recording");
-      setStatusWithMessage("Grabando...");
+      if (micWarning) {
+        setStatusWithMessage(`Grabando... ${micWarning}`);
+      } else {
+        setStatusWithMessage("Grabando...");
+      }
     } catch (error) {
       cleanupStreams();
+      clearVideoTrackHandler();
       timer.reset();
+      mediaRecorderRef.current = null;
+      isStoppingRef.current = false;
+      recorderErrorRef.current = false;
       setStatus("error");
       setStatusWithMessage(getErrorMessage(error), "error");
     }
   }, [
     cleanupStreams,
+    clearVideoTrackHandler,
+    finalizeAfterStop,
     fpsPresetId,
-    includeAudio,
+    handleRecorderError,
+    includeMicrophone,
+    includeSystemAudio,
     mimeType,
     resolutionId,
     setStatusWithMessage,
@@ -214,27 +376,79 @@ export function useScreenRecorder() {
     timer,
   ]);
 
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {
+          // Best-effort teardown on unmount
+        }
+      }
+
+      combinedStreamRef.current?.getTracks().forEach((track) => {
+        track.stop();
+      });
+      combinedStreamRef.current = null;
+
+      recordingsRef.current.forEach((recording) => {
+        URL.revokeObjectURL(recording.url);
+      });
+
+      timer.stop();
+    };
+  }, [timer]);
+
+  const reportDownloadFailure = useCallback(() => {
+    setStatusWithMessage("Error al descargar el archivo.", "error");
+  }, [setStatusWithMessage]);
+
   const downloadLatest = useCallback(() => {
-    if (!latestRecordingId) return;
-    const recording = recordings.find((r) => r.id === latestRecordingId);
-    if (recording) downloadFile(recording.url, recording.name);
-  }, [latestRecordingId, recordings]);
+    if (!latestRecordingId) {
+      return;
+    }
+    const recording = recordings.find((r) => {
+      return r.id === latestRecordingId;
+    });
+    if (recording) {
+      const success = downloadFile(recording.url, recording.name);
+      if (!success) {
+        reportDownloadFailure();
+      }
+    }
+  }, [latestRecordingId, recordings, reportDownloadFailure]);
 
   const downloadRecording = useCallback(
     (id: string) => {
-      const recording = recordings.find((r) => r.id === id);
-      if (recording) downloadFile(recording.url, recording.name);
+      const recording = recordings.find((r) => {
+        return r.id === id;
+      });
+      if (recording) {
+        const success = downloadFile(recording.url, recording.name);
+        if (!success) {
+          reportDownloadFailure();
+        }
+      }
     },
-    [recordings],
+    [recordings, reportDownloadFailure],
   );
 
   const deleteRecording = useCallback((id: string) => {
     setRecordings((prev) => {
-      const target = prev.find((r) => r.id === id);
-      if (target) URL.revokeObjectURL(target.url);
-      return prev.filter((r) => r.id !== id);
+      const target = prev.find((r) => {
+        return r.id === id;
+      });
+      if (target) {
+        URL.revokeObjectURL(target.url);
+      }
+      return prev.filter((r) => {
+        return r.id !== id;
+      });
     });
-    setLatestRecordingId((prev) => (prev === id ? null : prev));
+    setLatestRecordingId((prev) => {
+      return prev === id ? null : prev;
+    });
   }, []);
 
   const isRecording = status === "recording";
@@ -243,9 +457,42 @@ export function useScreenRecorder() {
   const canDownloadLatest =
     !isRecording &&
     latestRecordingId !== null &&
-    recordings.some((r) => r.id === latestRecordingId);
+    recordings.some((r) => {
+      return r.id === latestRecordingId;
+    });
 
-  return {
+  return useMemo(() => {
+    return {
+      status,
+      statusMessage,
+      statusVariant,
+      isRecording,
+      canStart,
+      canStop,
+      canDownloadLatest,
+      previewStream,
+      captureInfo,
+      recordings,
+      fpsPresetId,
+      resolutionId,
+      mimeType,
+      includeSystemAudio,
+      includeMicrophone,
+      supportedMimeTypes,
+      timerFormatted: timer.formatted,
+      timerSeconds: timer.seconds,
+      setFpsPresetId,
+      setResolutionId,
+      setMimeType,
+      setIncludeSystemAudio,
+      setIncludeMicrophone,
+      startRecording,
+      stopRecording,
+      downloadLatest,
+      downloadRecording,
+      deleteRecording,
+    };
+  }, [
     status,
     statusMessage,
     statusVariant,
@@ -259,19 +506,17 @@ export function useScreenRecorder() {
     fpsPresetId,
     resolutionId,
     mimeType,
-    includeAudio,
+    includeSystemAudio,
+    includeMicrophone,
     supportedMimeTypes,
-    timerFormatted: timer.formatted,
-    setFpsPresetId,
-    setResolutionId,
-    setMimeType,
-    setIncludeAudio,
+    timer.formatted,
+    timer.seconds,
     startRecording,
     stopRecording,
     downloadLatest,
     downloadRecording,
     deleteRecording,
-  };
+  ]);
 }
 
 export type UseScreenRecorderReturn = ReturnType<typeof useScreenRecorder>;

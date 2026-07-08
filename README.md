@@ -25,6 +25,7 @@ Abre la URL que muestra Vite (normalmente `http://localhost:5173/screen-recorder
 | `npm run build` | Compila a `dist/` |
 | `npm run preview` | Previsualiza el build de producción |
 | `npm run lint` | ESLint |
+| `npm test` | Vitest (unit + component tests) |
 
 ## Despliegue
 
@@ -43,7 +44,7 @@ URL en vivo: [https://franciscoveloz1.github.io/screen-recorder/](https://franci
 ## Funcionalidades
 
 - Captura de pantalla con `getDisplayMedia`
-- Audio del sistema y micrófono opcionales
+- Audio del sistema y micrófono opcionales (controles independientes)
 - Selector de FPS (30, 60, máximo del navegador) y resolución (nativa, 1080p, 1440p)
 - Bitrate de video escalado según FPS para mantener fluidez
 - Formatos detectados en runtime (WebM VP9/VP8, MP4)

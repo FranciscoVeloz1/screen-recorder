@@ -4,15 +4,19 @@ import { formatTime } from "../utils/formatTime";
 export function useRecordingTimer() {
   const [seconds, setSeconds] = useState(0);
   const secondsRef = useRef(0);
+  const startTimeRef = useRef<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const getSeconds = useCallback(() => secondsRef.current, []);
+  const getSeconds = useCallback(() => {
+    return secondsRef.current;
+  }, []);
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    startTimeRef.current = null;
   }, []);
 
   const reset = useCallback(() => {
@@ -23,13 +27,22 @@ export function useRecordingTimer() {
 
   const start = useCallback(() => {
     reset();
+    startTimeRef.current = Date.now();
     intervalRef.current = setInterval(() => {
-      secondsRef.current += 1;
-      setSeconds(secondsRef.current);
+      if (startTimeRef.current === null) {
+        return;
+      }
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      secondsRef.current = elapsed;
+      setSeconds(elapsed);
     }, 1000);
   }, [reset]);
 
-  useEffect(() => () => stop(), [stop]);
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
 
   return {
     seconds,

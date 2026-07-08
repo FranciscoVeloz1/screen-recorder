@@ -21,6 +21,18 @@ export const RESOLUTION_OPTIONS: ResolutionOption[] = [
 export const DEFAULT_FPS_PRESET_ID: FpsPresetId = "60";
 export const DEFAULT_RESOLUTION_ID: ResolutionId = "native";
 
+export function isFpsPresetId(value: string): value is FpsPresetId {
+  return FPS_PRESETS.some((preset) => {
+    return preset.id === value;
+  });
+}
+
+export function isResolutionId(value: string): value is ResolutionId {
+  return RESOLUTION_OPTIONS.some((option) => {
+    return option.id === value;
+  });
+}
+
 export function buildVideoConstraints(
   fps: FpsPresetId,
   resolution: ResolutionId,

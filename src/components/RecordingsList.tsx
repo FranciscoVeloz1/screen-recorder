@@ -13,20 +13,24 @@ export function RecordingsList({
   onDownload,
   onDelete,
 }: RecordingsListProps) {
-  if (recordings.length === 0) return null;
+  if (recordings.length === 0) {
+    return null;
+  }
 
   return (
-    <section className={styles.recordings} aria-label="Grabaciones de esta sesion">
-      <h2>Grabaciones de esta sesion</h2>
+    <section className={styles.recordings} aria-label="Grabaciones de esta sesión">
+      <h2>Grabaciones de esta sesión</h2>
       <div className={styles.list}>
-        {recordings.map((recording) => (
-          <RecordingItem
-            key={recording.id}
-            recording={recording}
-            onDownload={onDownload}
-            onDelete={onDelete}
-          />
-        ))}
+        {recordings.map((recording) => {
+          return (
+            <RecordingItem
+              key={recording.id}
+              recording={recording}
+              onDownload={onDownload}
+              onDelete={onDelete}
+            />
+          );
+        })}
       </div>
     </section>
   );

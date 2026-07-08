@@ -26,7 +26,7 @@
 }
 
 .meta {
-  color: #555;
+  color: var(--color-text-muted);
   font-size: 0.78rem;
 }
 
@@ -61,4 +61,16 @@
   background: #3a1e1e;
   color: var(--color-error-text);
   border-color: #502a2a;
+}
+
+.confirmDelete {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+}
+
+.cancelDelete {
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  border-color: var(--color-border);
 }

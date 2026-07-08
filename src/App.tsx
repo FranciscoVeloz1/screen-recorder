@@ -16,48 +16,57 @@ const App = () => {
   return (
     <>
       <Header />
-      <RecorderCard>
-        <RecordingOptions
-          fpsPresetId={recorder.fpsPresetId}
-          resolutionId={recorder.resolutionId}
-          mimeType={recorder.mimeType}
-          includeAudio={recorder.includeAudio}
-          supportedMimeTypes={recorder.supportedMimeTypes}
-          disabled={optionsDisabled}
-          onFpsPresetChange={recorder.setFpsPresetId}
-          onResolutionChange={recorder.setResolutionId}
-          onMimeTypeChange={recorder.setMimeType}
-          onIncludeAudioChange={recorder.setIncludeAudio}
-        />
+      <main>
+        <RecorderCard>
+          <RecordingOptions
+            fpsPresetId={recorder.fpsPresetId}
+            resolutionId={recorder.resolutionId}
+            mimeType={recorder.mimeType}
+            includeSystemAudio={recorder.includeSystemAudio}
+            includeMicrophone={recorder.includeMicrophone}
+            supportedMimeTypes={recorder.supportedMimeTypes}
+            disabled={optionsDisabled}
+            onFpsPresetChange={recorder.setFpsPresetId}
+            onResolutionChange={recorder.setResolutionId}
+            onMimeTypeChange={recorder.setMimeType}
+            onIncludeSystemAudioChange={recorder.setIncludeSystemAudio}
+            onIncludeMicrophoneChange={recorder.setIncludeMicrophone}
+          />
 
-        <PreviewPanel
-          previewStream={recorder.previewStream}
-          isRecording={recorder.isRecording}
-          timerFormatted={recorder.timerFormatted}
-        />
+          <PreviewPanel
+            previewStream={recorder.previewStream}
+            isRecording={recorder.isRecording}
+            timerFormatted={recorder.timerFormatted}
+            timerSeconds={recorder.timerSeconds}
+          />
 
-        <CaptureInfo info={recorder.isRecording ? recorder.captureInfo : null} />
+          <CaptureInfo
+            info={recorder.isRecording ? recorder.captureInfo : null}
+          />
 
-        <RecordingControls
-          canStart={recorder.canStart}
-          canStop={recorder.canStop}
-          canDownloadLatest={recorder.canDownloadLatest}
-          onStart={() => void recorder.startRecording()}
-          onStop={recorder.stopRecording}
-          onDownload={recorder.downloadLatest}
-        />
+          <RecordingControls
+            canStart={recorder.canStart}
+            canStop={recorder.canStop}
+            canDownloadLatest={recorder.canDownloadLatest}
+            onStart={() => {
+              void recorder.startRecording();
+            }}
+            onStop={recorder.stopRecording}
+            onDownload={recorder.downloadLatest}
+          />
 
-        <StatusMessage
-          message={recorder.statusMessage}
-          variant={recorder.statusVariant}
-        />
+          <StatusMessage
+            message={recorder.statusMessage}
+            variant={recorder.statusVariant}
+          />
 
-        <RecordingsList
-          recordings={recorder.recordings}
-          onDownload={recorder.downloadRecording}
-          onDelete={recorder.deleteRecording}
-        />
-      </RecorderCard>
+          <RecordingsList
+            recordings={recorder.recordings}
+            onDownload={recorder.downloadRecording}
+            onDelete={recorder.deleteRecording}
+          />
+        </RecorderCard>
+      </main>
     </>
   );
 };
