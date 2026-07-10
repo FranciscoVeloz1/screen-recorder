@@ -1,0 +1,43 @@
+.controls {
+  display: flex;
+  gap: 12px;
+}
+
+.controls button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-control);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.controls button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.controls button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.start {
+  background: var(--color-accent);
+}
+
+.stop {
+  background: var(--color-danger);
+}
+
+.download {
+  background: var(--color-success);
+}

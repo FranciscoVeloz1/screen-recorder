@@ -1,0 +1,14 @@
+.status {
+  font-size: 0.82rem;
+  color: var(--color-text-dim);
+  text-align: center;
+  min-height: 1.2em;
+}
+
+.error {
+  color: var(--color-error-text);
+}
+
+.ok {
+  color: var(--color-success-text);
+}
