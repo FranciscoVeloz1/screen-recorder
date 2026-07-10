@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { Recording } from "../types/recording";
-import { formatBytes } from "../utils/formatBytes";
-import { formatTime } from "../utils/formatTime";
+import type { Recording } from "../../types/recording";
+import { formatBytes } from "../../utils/formatBytes";
+import { formatTime } from "../../utils/formatTime";
 import styles from "./RecordingItem.module.css";
 
 interface RecordingItemProps {

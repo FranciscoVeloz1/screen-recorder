@@ -1,4 +1,4 @@
-import type { StatusVariant } from "../types/recording";
+import type { StatusVariant } from "../../types/recording";
 import styles from "./StatusMessage.module.css";
 
 interface StatusMessageProps {

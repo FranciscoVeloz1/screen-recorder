@@ -1,5 +1,5 @@
-import type { CaptureInfo as CaptureInfoData } from "../types/recording";
-import { formatCaptureInfo } from "../utils/formatCaptureInfo";
+import type { CaptureInfo as CaptureInfoData } from "../../types/recording";
+import { formatCaptureInfo } from "../../utils/formatCaptureInfo";
 import styles from "./CaptureInfo.module.css";
 
 interface CaptureInfoProps {

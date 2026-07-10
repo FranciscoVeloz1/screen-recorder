@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MonitorIcon } from "./icons/Icons";
+import { MonitorIcon } from "../icons/Icons";
 import styles from "./PreviewPanel.module.css";
 
 interface PreviewPanelProps {

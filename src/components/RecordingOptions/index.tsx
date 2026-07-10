@@ -1,10 +1,10 @@
-import type { FpsPresetId, ResolutionId } from "../types/recording";
+import type { FpsPresetId, ResolutionId } from "../../types/recording";
 import {
   FPS_PRESETS,
   isFpsPresetId,
   isResolutionId,
   RESOLUTION_OPTIONS,
-} from "../utils/recordingSettings";
+} from "../../utils/recordingSettings";
 import styles from "./RecordingOptions.module.css";
 
 interface RecordingOptionsProps {

@@ -1,4 +1,4 @@
-import { DownloadIcon, RecordIcon, StopIcon } from "./icons/Icons";
+import { DownloadIcon, RecordIcon, StopIcon } from "../icons/Icons";
 import styles from "./RecordingControls.module.css";
 
 interface RecordingControlsProps {

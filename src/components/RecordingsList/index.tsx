@@ -1,5 +1,5 @@
-import type { Recording } from "../types/recording";
-import { RecordingItem } from "./RecordingItem";
+import type { Recording } from "../../types/recording";
+import { RecordingItem } from "../RecordingItem";
 import styles from "./RecordingsList.module.css";
 
 interface RecordingsListProps {
