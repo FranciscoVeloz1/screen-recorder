@@ -172,7 +172,13 @@ export function useScreenRecorder() {
         setStatusWithMessage("La grabación quedó vacía.", "error");
       }
     }
-  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
+  }, [
+    cleanupStreams,
+    clearVideoTrackHandler,
+    setStatusWithMessage,
+    timer.getSeconds,
+    timer.stop,
+  ]);
 
   const stopRecording = useCallback(() => {
     if (isStoppingRef.current) {
@@ -201,7 +207,7 @@ export function useScreenRecorder() {
       setStatus("error");
       setStatusWithMessage("Error al detener la grabación.", "error");
     }
-  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
+  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer.stop]);
 
   const handleRecorderError = useCallback(() => {
     if (isStoppingRef.current) {
@@ -236,7 +242,7 @@ export function useScreenRecorder() {
       setStatus("error");
       setStatusWithMessage("Error durante la grabación.", "error");
     }
-  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer]);
+  }, [cleanupStreams, clearVideoTrackHandler, setStatusWithMessage, timer.stop]);
 
   const startRecording = useCallback(async () => {
     const encoding = calculateEncodingSettings(fpsPresetId, resolutionId);
@@ -373,10 +379,13 @@ export function useScreenRecorder() {
     setStatusWithMessage,
     stopRecording,
     supportedMimeTypes,
-    timer,
+    timer.reset,
+    timer.start,
   ]);
 
   useEffect(() => {
+    const stopTimer = timer.stop;
+
     return () => {
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") {
@@ -396,9 +405,9 @@ export function useScreenRecorder() {
         URL.revokeObjectURL(recording.url);
       });
 
-      timer.stop();
+      stopTimer();
     };
-  }, [timer]);
+  }, [timer.stop]);
 
   const reportDownloadFailure = useCallback(() => {
     setStatusWithMessage("Error al descargar el archivo.", "error");

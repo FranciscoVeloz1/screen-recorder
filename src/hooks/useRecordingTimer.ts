@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTime } from "../utils/formatTime";
 
 export function useRecordingTimer() {
@@ -44,12 +44,14 @@ export function useRecordingTimer() {
     };
   }, [stop]);
 
-  return {
-    seconds,
-    formatted: formatTime(seconds),
-    getSeconds,
-    start,
-    stop,
-    reset,
-  };
+  return useMemo(() => {
+    return {
+      seconds,
+      formatted: formatTime(seconds),
+      getSeconds,
+      start,
+      stop,
+      reset,
+    };
+  }, [getSeconds, reset, seconds, start, stop]);
 }
