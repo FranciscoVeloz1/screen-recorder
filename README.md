@@ -1,5 +1,10 @@
 # Grabadora de Pantalla
 
+## Status
+
+- **Stage:** production ready
+- **Audited:** 2026-08-23
+
 Aplicación web para grabar la pantalla desde el navegador. Captura video (y audio opcional del sistema y micrófono), muestra una vista previa en vivo y permite descargar las grabaciones de la sesión.
 
 ## Requisitos
